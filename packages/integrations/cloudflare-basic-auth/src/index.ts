@@ -12,19 +12,23 @@ const createPlugin = (): AstroIntegration => {
 		name: PKG_NAME,
 		hooks: {
 			'astro:build:done': async ({ dir, logger }) => {
+				if (!process.env.CFP_PASSWORD) {
+					logger.info("Skipping CF basic auth.");
+					return;
+				}
 				logger.info("Setting up CF basic auth.")
 				try {
-					const functionsDir = `${fileURLToPath(dir)}/functions`
+					const destDir = path.dirname(fileURLToPath(dir)) + '/functions';
 					const srcDir = `${path.dirname(fileURLToPath(import.meta.url))}/functions`;
 
-					if (!fs.existsSync(functionsDir))
-						fs.mkdirSync(functionsDir, {recursive: true});
+					if (!fs.existsSync(destDir))
+						fs.mkdirSync(destDir, {recursive: true});
 
 					for (const fname of fs.readdirSync(srcDir)) {
 						const src = `${srcDir}/${fname}`;
-						const dest =  `${functionsDir}/${fname}`;
+						const dest =  `${destDir}/${fname}`;
+						console.info(`Copying ${src} to ${dest}`);
 						fs.copyFileSync(src, dest);
-						logger.info(`Copying ${src} to ${dest}`);
 					}
 
 				} catch (err) {
